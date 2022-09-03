@@ -1,2 +1,2 @@
 # Scrabble
-A cli scrabble game written in python for greek
+A greek cli scrabble game written in python
