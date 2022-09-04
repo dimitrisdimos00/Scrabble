@@ -1,7 +1,6 @@
 import itertools
 import random
 import pickle
-import os.path
 
 class SakClass:
     lets = {'Α':[12,1],'Β':[1,8],'Γ':[2,4],'Δ':[2,4],'Ε':[8,1],
@@ -14,11 +13,11 @@ class SakClass:
         self.sak = []
 
     def randomizeSak(self):
-        # for key in SakClass.lets:
-        #     for i in range(SakClass.lets[key][0]):
-        #         self.sak.append(key)
-        # random.shuffle(self.sak)
-        self.sak = ['Α','Β','Α','Ζ','Θ','Η','Τ','Ι','Ι','Ο','Ω','Μ','Ν','Ω','Α','Ι','Ω','Ε','Ε','Σ']
+        for key in SakClass.lets:
+            for i in range(SakClass.lets[key][0]):
+                self.sak.append(key)
+        random.shuffle(self.sak)
+        # self.sak = ['Α','Β','Α','Ζ','Θ','Η','Τ','Ι','Ι','Ο','Ω','Μ','Ν','Ω','Α','Ι','Ω','Ε','Ε','Σ']
     
     '''0<=n'''
     def getLetters(self, n):
@@ -73,11 +72,11 @@ class Logic:
             value += lets[letter][1]
         words_values.setdefault(word, value)
 
-    def lettersValue(letters):
-        letters_value = []
+    def letterValues(letters):
+        letter_values = []
         for letter in letters:
-            letters_value.append(Logic.lets.get(letter)[1])
-        return letters_value
+            letter_values.append(Logic.lets.get(letter)[1])
+        return letter_values
 
     def wordValue(word):
         if word == 'p' or word == 'q':
@@ -113,7 +112,7 @@ class Player:
         InputOutput.stars()
         InputOutput.playerStats(self.name, score)
         InputOutput.lettersRemaining(letter_count)
-        letter_values = Logic.lettersValue(letters)
+        letter_values = Logic.letterValues(letters)
         InputOutput.lettersAndValues(letters, letter_values)
 
 class Human(Player):
@@ -140,19 +139,19 @@ class Human(Player):
         return word
 
 class Computer(Player):
-    def __init__(self, name="PC", mode="max"):
+    def __init__(self, name="PC", mode="MAX"):
         super().__init__(name)
         self.mode = mode
     
     def play(self, letters):
-        if self.mode == "min":
+        if self.mode == "MIN":
             for i in range(2, len(letters) + 1):
                 words = itertools.permutations(letters, i)
                 for word in words:
                     wordstr = ''.join(list(word))
                     if Logic.wordInDict(wordstr):
                         return wordstr
-        elif self.mode == "max": 
+        elif self.mode == "MAX": 
             for i in range(len(letters), 1, -1):
                 words = itertools.permutations(letters, i)
                 for word in words:
@@ -179,55 +178,96 @@ class Computer(Player):
                 return total_words[maxind]
         return 'p'
 
+class GameStats():
+    def __init__(self, player_name, player_score, pc_score, total_moves, match_result) -> None:
+        self.player_name = player_name
+        self.player_score = player_score
+        self.pc_score = pc_score
+        self.total_moves = total_moves
+        self.match_result = match_result
+
+    def __repr__(self) -> str:
+        return ("Σκορ παίκτη: " + str(self.player_score) 
+        + ", Σκορ υπολογιστή: " + str(self.pc_score) + ", Συνολικές κινήσεις: " + str(self.total_moves) + 
+        ", Αποτέλεσμα: " + self.match_result)
+
 class Game:
     def __init__(self) -> None:
         self.ph = Human()
         self.pc = Computer()
         self.sak = SakClass()
         self.players = []
-        self.playerExists = False
+        self.stats = []
     
     def __repr__(self) -> str:
         return 'game instance'
     
     def setup(self):
-        if os.path.exists("names.pkl"):
-            with open("names.pkl", "rb") as f:
-                self.players = pickle.load(f)
-        else:
-            with open("names.pkl", "wb") as f:
-                pickle.dump(self.players, f)
+        self.players = InputOutput.loadFromFile("names.pkl")
+        self.stats = InputOutput.loadFromFile("stats.pkl")
         
         InputOutput.giveName()
-        self.ph.name = InputOutput.inputAns()
+        name = InputOutput.inputAns()
+        playerExists = False
         for player in self.players:
-            if self.ph.name == player.name:
-                self.playerExists = True
+            if name == player.name:
+                playerExists = True
                 self.ph = player
-    
+        if not playerExists:
+            self.players.append(Human(name))
+            for player in self.players:
+                if name == player.name:
+                    self.ph = player
+
     def run(self):
         self.setup()
         
         InputOutput.menu()
         ans = InputOutput.inputAns()
         while ans != 'q':
+            
             if ans == '1':
-                # for player in self.players:
-                #     print("playername:", player.name, "score:", player.score, "wins:", player.wins)
-                print(repr(self.ph))
+                print("\n" + repr(self.ph))
+                game_count = 0
+                InputOutput.gamesTitle()
+                for s in self.stats:
+                    if s.player_name == self.ph.name:
+                        game_count += 1
+                        InputOutput.statEntry(game_count, s, False, True)
+                if game_count == 0: 
+                    InputOutput.noGamesYet()
 
             elif ans == '2':
                 InputOutput.settings()
                 choice = InputOutput.inputAns()
-                while choice != '1' and choice != '2' and choice != '3':
+                while not(choice == '1' or choice == '2' or choice == '3' or choice == '4' or choice == '5'):
                     InputOutput.wrongMenuInput()
                     choice = InputOutput.inputAns()
                 if choice == '1':
-                    self.pc.mode = "min"
+                    self.pc.mode = "MIN"
+                    InputOutput.algorithm(self.pc.mode)
                 elif choice == '2':
-                    self.pc.mode = "max"
+                    self.pc.mode = "MAX"
+                    InputOutput.algorithm(self.pc.mode)
+                elif choice == '3':
+                    self.pc.mode = "SMART"
+                    InputOutput.algorithm(self.pc.mode)
+                elif choice == '4':
+                    if len(self.players) != 0:
+                        InputOutput.playersTitle()
+                        for p in self.players:
+                            print(repr(p))
+                    else:
+                        InputOutput.noEntries()
                 else:
-                    self.pc.mode = "smart"
+                    if len(self.stats) != 0:
+                        index = 0
+                        InputOutput.statsTitle()
+                        for s in self.stats:
+                            index += 1
+                            InputOutput.statEntry(index, s, True, False)
+                    else:
+                        InputOutput.noEntries()
             
             elif ans == '3':
                 self.sak.randomizeSak()
@@ -235,21 +275,24 @@ class Game:
                 score_human = 0
                 letters_pc = self.sak.getLetters(7)
                 score_pc = 0
+                word_points = 0
+                total_moves = 0 
                 game_ended = False
-                while self.sak.lettersInSak() != 0 and not game_ended:
+                while len(letters_human) == 7 and len(letters_pc) == 7 and not game_ended:
                     self.ph.display(score_human, letters_human, self.sak.lettersInSak())
                     word = self.ph.play(letters_human)
-                    word_points += Logic.wordValue(word)
-                    InputOutput.wordOutput(word, word_points, False)
+                    word_points = Logic.wordValue(word)
+                    InputOutput.wordFeedback(word, word_points, False, True)
                     if word != 'q':
+                        total_moves += 2
                         score_human += word_points
                         InputOutput.newScore(score_human)
                         letters_human = self.sak.updateLetters(letters_human, word)
 
                         self.pc.display(score_pc, letters_pc, self.sak.lettersInSak())
                         word = self.pc.play(letters_pc)
-                        word_points += Logic.wordValue(word)
-                        InputOutput.wordOutput(word, word_points, True)
+                        word_points = Logic.wordValue(word)
+                        InputOutput.wordFeedback(word, word_points, True, False)
                         score_pc += word_points
                         InputOutput.newScore(score_pc)
                         letters_pc = self.sak.updateLetters(letters_pc, word)
@@ -257,13 +300,17 @@ class Game:
                         game_ended = True
                         
                 self.ph.score += score_human
+                match_result = "Ισοπαλία"
                 if score_pc > score_human:
                     InputOutput.winnerLoser(self.pc.name, self.ph.name, score_pc, score_human)
+                    match_result = "Νίκη PC"
                 elif score_pc < score_human:
                     self.ph.wins += 1
                     InputOutput.winnerLoser(self.ph.name, self.pc.name, score_human, score_pc)
+                    match_result = "Νίκη " + self.ph.name
                 else:
                     InputOutput.draw()
+                self.stats.append(GameStats(self.ph.name, score_human, score_pc, total_moves, match_result))
             else:
                 InputOutput.wrongMenuInput()
             InputOutput.menu()
@@ -273,18 +320,16 @@ class Game:
         self.end()
       
     def end(self):
-        if not self.playerExists:
-            self.players.append(Human(self.ph.name, self.ph.score, self.ph.wins))
-        with open('names.pkl','wb') as f:
-            pickle.dump(self.players, f)  
+        InputOutput.saveOnFile("names.pkl", self.players)
+        InputOutput.saveOnFile("stats.pkl", self.stats)
 
 '''Κλάση με όλες τις μεθόδους με τιμές που εκτυπώνονται στο χρήστη'''
 class InputOutput:
     def menu():
-        print("*****SCRABBLE*****\n---------------\n1: Σκορ\n2: Ρυθμίσεις\n3: Παιχνίδι\nq: Έξοδος\n---------------")
+        print("\n*****SCRABBLE*****\n---------------\n1: Σκορ\n2: Ρυθμίσεις\n3: Παιχνίδι\nq: Έξοδος\n---------------")
     
     def stars():
-        print("***********************************************************")
+        print("\n***********************************************************")
     
     def lettersRemaining(letter_count):
         print("Γράμματα μέσα στο σακουλάκι: ",letter_count)
@@ -298,7 +343,7 @@ class InputOutput:
     def wrongMenuInput():
         print("Λάθος είσοδος!")
     
-    def wordOutput(word, word_points, showWord):
+    def wordFeedback(word, word_points, showWord, showWordAccepted):
         if showWord:
             print("Λέξη που δόθηκε: ", word)
         if word == 'p':
@@ -306,19 +351,22 @@ class InputOutput:
         elif word == 'q':
             print("Έξοδος παιχνιδιού")
         else:
-            print("Αποδεκτή λέξη!")
+            if showWordAccepted:
+                print("Αποδεκτή λέξη!")
             print("Πόντοι λέξης: ", word_points)
 
     def lettersAndValues(letters, letter_values):
         print("Διαθέσιμα γράμματα: ",end="")
         for i in range(len(letters) - 1):
             print(letters[i],letter_values[i],sep=",",end=" - ")
-        print(letters[i],letter_values[i],sep=",")
+        print(letters[i + 1],letter_values[i + 1],sep=",")
 
     def settings():
-        print("Για MIN mode πληκτρολόγησε 1")
+        print("\nΓια MIN mode πληκτρολόγησε 1")
         print("Για MAX mode πληκτρολόγησε 2")
         print("Για SMART mode πληκτρολόγησε 3")
+        print("Για εμφάνιση στατιστικών όλων των παικτών πληκτρολόγησε 4")
+        print("Για εμφάνιση στατιστικών όλων των παιχνιδιών πληκτρολόγησε 5")
     
     def exited():
         print("Βγήκες από το παιχνίδι.")
@@ -327,10 +375,16 @@ class InputOutput:
         print("Δώσε όνομα")
     
     def winnerLoser(winner, loser, scorew, scorel):
-        print("Ο παίκτης", winner, "νίκησε τον παίκτη", loser, "με διαφορά σκορ: ", scorew, " - ", scorel)
+        print("\nΟ παίκτης", winner, "νίκησε τον παίκτη", loser, "με διαφορά σκορ: ", scorew, " - ", scorel)
     
+    def gamesTitle():
+        print("-------Παιχνίδια-------")
+
+    def noGamesYet():
+        print("Δεν έχει παιχτεί κανένα παιχνίδι ακόμη!")
+
     def draw():
-        print("Ισοπαλία!")
+        print("\nΙσοπαλία!")
     
     def playerStats(name, score):
         print("*** Παίκτης:", name, " *** Σκορ:", score)
@@ -338,9 +392,52 @@ class InputOutput:
     def newScore(score):
         print("Νέο σκορ: ", score)
     
+    def algorithm(mode):
+        print("\nΟ αλγόριθμος που θα χρησιμοποιήσει ο υπολογιστής είναι ο: ", mode)
+
+    def statEntry(index, s, showName, showIndex):
+        if showName:
+            print("Παίκτης " + s.player_name, end=", ")
+        if showIndex:
+            print(str(index) + ". ", end="")
+        print(repr(s))
+
+    def statsTitle():
+        print("\n------ΣΤΑΤΙΣΤΙΚΑ ΠΑΙΧΝΙΔΙΩΝ------")
+
+    def playersTitle():
+        print("\n------ΠΑΙΚΤΕΣ------")
+
+    def noEntries():
+        print("\nΔεν υπάρχει καμία καταχώρηση!")
+
     def inputWord():
         return input("Λέξη (δώσε 'p' για πάσο, 'q' για έξοδο): ")
     
     def inputAns():
         return input("Απάντηση: ")
+    
+    def loadFromFile(filename):
+        data = []
+        try:
+            with open(filename, "rb") as f:
+                data = pickle.load(f)
+        except FileNotFoundError:
+            print("Δημιουργία αρχείου " + filename)
+            with open(filename, "wb") as f:
+                pickle.dump(data, f)
+        except:
+            print("Γενικό σφάλμα κατά το άνοιγμα του αρχείου" + filename    )
+        return data
+
+    def saveOnFile(filename, data):
+        try:
+            with open(filename,'wb') as f:
+                pickle.dump(data, f)  
+        except FileNotFoundError as err:
+            print("Σφάλμα κατά το άνοιγμα του αρχείου " + filename)
+            print(err)
+        except:
+            print("Γενικό σφάλμα κατά το άνοιγμα του αρχείου " + filename)
+            print
         
