@@ -17,7 +17,6 @@ class SakClass:
             for i in range(SakClass.lets[key][0]):
                 self.sak.append(key)
         random.shuffle(self.sak)
-        # self.sak = ['Α','Β','Α','Ζ','Θ','Η','Τ','Ι','Ι','Ο','Ω','Μ','Ν','Ω','Α','Ι','Ω','Ε','Ε','Σ']
     
     '''0<=n'''
     def getLetters(self, n):
@@ -35,10 +34,10 @@ class SakClass:
         for i in range(len(letters)):
             self.sak.insert(random.randrange(0, len(self.sak)), letters[i])
     
-    '''κεφαλαία μονο'''
     def lettersInSak(self):
         return len(self.sak)
     
+    '''κεφαλαία μόνο'''
     def updateLetters(self, letters, word):
         if word == 'p':
             self.putBackLetters(letters)
@@ -65,27 +64,27 @@ class Logic:
     with open ('greek7.txt','r',encoding='utf-8') as f:
         words = f.read().splitlines()
     
-    words_values = {}
+    word_values = {}
     for word in words:
         value = 0
         for letter in word:
             value += lets[letter][1]
-        words_values.setdefault(word, value)
+        word_values.setdefault(word, value)
 
     def letterValues(letters):
         letter_values = []
         for letter in letters:
             letter_values.append(Logic.lets.get(letter)[1])
         return letter_values
+    
+    def wordValueDict(word):
+        return Logic.word_values.get(word)
 
     def wordValue(word):
         if word == 'p' or word == 'q':
             return 0
         else:
             return Logic.wordValueDict(word)
-    
-    def wordValueDict(word):
-        return Logic.words_values.get(word)
 
     def lettersInWord(letters, word):
         letters_duplicate = letters.copy()
@@ -143,6 +142,9 @@ class Computer(Player):
         super().__init__(name)
         self.mode = mode
     
+    def __repr__(self) -> str:
+        return super().__repr__()
+
     def play(self, letters):
         if self.mode == "MIN":
             for i in range(2, len(letters) + 1):
@@ -208,6 +210,10 @@ class Game:
         
         InputOutput.giveName()
         name = InputOutput.inputAns()
+        while str.isspace(name) or name =="":
+            InputOutput.wrongInput()
+            InputOutput.giveName()
+            name = InputOutput.inputAns()
         playerExists = False
         for player in self.players:
             if name == player.name:
@@ -241,7 +247,7 @@ class Game:
                 InputOutput.settings()
                 choice = InputOutput.inputAns()
                 while not(choice == '1' or choice == '2' or choice == '3' or choice == '4' or choice == '5'):
-                    InputOutput.wrongMenuInput()
+                    InputOutput.wrongInput()
                     choice = InputOutput.inputAns()
                 if choice == '1':
                     self.pc.mode = "MIN"
@@ -311,8 +317,9 @@ class Game:
                 else:
                     InputOutput.draw()
                 self.stats.append(GameStats(self.ph.name, score_human, score_pc, total_moves, match_result))
+            
             else:
-                InputOutput.wrongMenuInput()
+                InputOutput.wrongInput()
             InputOutput.menu()
             ans = InputOutput.inputAns()
         InputOutput.exited()
@@ -323,7 +330,6 @@ class Game:
         InputOutput.saveOnFile("names.pkl", self.players)
         InputOutput.saveOnFile("stats.pkl", self.stats)
 
-'''Κλάση με όλες τις μεθόδους με τιμές που εκτυπώνονται στο χρήστη'''
 class InputOutput:
     def menu():
         print("\n*****SCRABBLE*****\n---------------\n1: Σκορ\n2: Ρυθμίσεις\n3: Παιχνίδι\nq: Έξοδος\n---------------")
@@ -340,7 +346,7 @@ class InputOutput:
     def wrongWord():
         print("Η λέξη που δόθηκε δεν θεωρείται έγκυρη.")
     
-    def wrongMenuInput():
+    def wrongInput():
         print("Λάθος είσοδος!")
     
     def wordFeedback(word, word_points, showWord, showWordAccepted):
