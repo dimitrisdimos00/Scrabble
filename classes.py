@@ -125,16 +125,19 @@ class Human(Player):
 
     def play(self, letters):
         word = InputOutput.inputWord()
-        invalid = True
-        while word != 'p' and word != 'q' and invalid:
+        valid = False
+        while word != 'p' and word != 'q' and not valid:
             if not(Logic.lettersInWord(letters, word)):
                 InputOutput.wrongLetters()
+                word = InputOutput.inputWord()
+            elif len(word) == 1:
+                InputOutput.wordWithTwoLetters()
                 word = InputOutput.inputWord()
             elif not(Logic.wordInDict(word)):
                 InputOutput.wrongWord()
                 word = InputOutput.inputWord()
             else:
-                invalid = False
+                valid = True
         return word
 
 class Computer(Player):
@@ -337,6 +340,9 @@ class InputOutput:
     def stars():
         print("\n***********************************************************")
     
+    def wordWithTwoLetters():
+        print("Θα πρέπει να δοθεί μία λέξη με δύο ή περισσότερα γράμματα!")
+
     def lettersRemaining(letter_count):
         print("Γράμματα μέσα στο σακουλάκι: ",letter_count)
     
